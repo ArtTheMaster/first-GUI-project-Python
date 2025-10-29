@@ -299,6 +299,32 @@ class AppMenu:
                            ('!pressed', 'raised')      # "Raised" shape otherwise
                        ])
         # --- END OF STYLING FIX ---
+
+        # --- *** NEW STYLE FOR THE EXIT BUTTON *** ---
+        # It's the same as the main menu, but with less vertical padding
+        self.style.configure("Exit.TButton",
+                             font=("Segoe UI", 18, "bold"),
+                             padding=(20, 10),  # (horizontal=20, vertical=10)
+                             background=self.BTN_BG,
+                             foreground=self.BTN_FG,
+                             borderwidth=3,
+                             relief="raised"
+                             )
+        
+        self.style.map("Exit.TButton",
+                       background=[
+                           ('pressed', self.BTN_ACTIVE_BG),
+                           ('active', self.BTN_HOVER_BG),
+                           ('!disabled', self.BTN_BG)
+                       ],
+                       foreground=[
+                           ('!disabled', self.BTN_FG)
+                       ],
+                       relief=[
+                           ('pressed', 'sunken'),
+                           ('!pressed', 'raised')
+                       ])
+        # --- *** END OF NEW STYLE *** ---
         
         self.main_frame = tk.Frame(self.root, bg=self.BG_COLOR)
         self.main_frame.pack(expand=True, fill="both")
@@ -393,8 +419,8 @@ class AppMenu:
         credits_window.resizable(False, False)
 
         # Center the window
-        win_width = 500
-        win_height = 600
+        win_width = 800
+        win_height = 700
         screen_width = credits_window.winfo_screenwidth()
         screen_height = credits_window.winfo_screenheight()
         x = (screen_width // 2) - (win_width // 2)
@@ -423,8 +449,8 @@ class AppMenu:
         tk.Label(credits_window, text=names_text, font=("Segoe UI", 14, "bold"),
                  bg=self.BG_COLOR, fg=self.BTN_FG).pack(pady=10)
 
-        # --- Exit Button ---
-        ttk.Button(credits_window, text="Exit Application", style="MainMenu.TButton",
+        # --- Exit Button (MODIFIED to use "Exit.TButton" style) ---
+        ttk.Button(credits_window, text="End", style="Exit.TButton",
                    command=self.root.quit).pack(pady=(15, 20))
 
 
