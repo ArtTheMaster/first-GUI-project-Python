@@ -440,7 +440,7 @@ class AppMenu:
             dev_image.pack(pady=(20, 10))
         else:
             # Otherwise, show a placeholder text
-            placeholder = tk.Label(credits_window, text="[ Image of Developers ]", font=("Segoe UI", 14, "italic"),
+            placeholder = tk.Label(credits_window, text="", font=("Segoe UI", 14, "italic"),
                                    bg=self.BTN_BG, fg=self.BTN_FG, width=30, height=15, relief="solid", borderwidth=2)
             placeholder.pack(pady=(20, 10))
 

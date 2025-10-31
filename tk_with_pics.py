@@ -135,7 +135,8 @@ class ImagePopup:
     returned by the `show_image_popup` facade when used with confirm=True.
     """
 
-    def __init__(self, title: str, message: str, image_path: Optional[str], max_size: Tuple[int, int] = POPUP_MAX_SIZE,
+    # <--- MODIFIED: Added 'parent' argument
+    def __init__(self, title: str, message: str, image_path: Optional[str], parent: Optional[tk.Widget] = None, max_size: Tuple[int, int] = POPUP_MAX_SIZE,
                  confirm: bool = False):
         self.title = title
         self.message = message
@@ -143,6 +144,7 @@ class ImagePopup:
         self.max_size = max_size
         self.confirm = confirm
         self.result = False
+        self.parent = parent # <--- MODIFIED: Store the parent
 
         self.root = None
         self._label_img = None
@@ -153,7 +155,8 @@ class ImagePopup:
         self._open_popup()
 
     def _open_popup(self):
-        self.root = tk.Toplevel()
+        # <--- MODIFIED: Pass the parent to Toplevel
+        self.root = tk.Toplevel(self.parent) 
         self.root.title(self.title)
         self.root.config(bg=WINDOW_BG)
         # on close, ensure animation stops
@@ -171,7 +174,8 @@ class ImagePopup:
                 tk.Button(self.root, text='Close', command=self._close, bg=BUTTON_BG, fg=BUTTON_FG).pack(pady=(0, 12))
             if self.confirm:
                 try:
-                    self.root.transient(tk._default_root)
+                    # <--- MODIFIED: transient() makes it transient to its parent (set in Toplevel)
+                    self.root.transient() 
                     self.root.grab_set()
                     self.root.wait_window()
                 except Exception:
@@ -241,7 +245,8 @@ class ImagePopup:
         # If confirm mode, make the window modal and wait for result.
         if self.confirm:
             try:
-                self.root.transient(tk._default_root)
+                # <--- MODIFIED: transient() makes it transient to its parent (set in Toplevel)
+                self.root.transient()
                 self.root.grab_set()
                 self.root.wait_window()
             except Exception:
@@ -279,15 +284,18 @@ class ImagePopup:
         self._close()
 
 
-def show_image_popup(title: str, message: str, image_path: Optional[str], size: Tuple[int, int] = POPUP_MAX_SIZE, confirm: bool = False) -> Optional[bool]:
-    p = ImagePopup(title, message, image_path, max_size=size, confirm=confirm)
+# <--- MODIFIED: Added 'parent' argument
+def show_image_popup(title: str, message: str, image_path: Optional[str], parent: Optional[tk.Widget] = None, size: Tuple[int, int] = POPUP_MAX_SIZE, confirm: bool = False) -> Optional[bool]:
+    # <--- MODIFIED: Pass 'parent' to ImagePopup
+    p = ImagePopup(title, message, image_path, parent=parent, max_size=size, confirm=confirm)
     return p.result if confirm else None
 
 
 # -----------------------------
 # Stack App (main UI)
 # -----------------------------
-class StackApp:
+# <--- MODIFIED: Renamed class to match main.py's import
+class AsciiStackApp:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title('Stack UI (GIF & Sound)')
@@ -353,7 +361,8 @@ class StackApp:
             self.info_label.config(text='Overflow! Stack > 10', fg='red')
             candidate = find_image('overflow', [self.script_dir, os.getcwd()])
             if candidate:
-                show_image_popup('Overflow', 'stack is full! stop', candidate)
+                # <--- MODIFIED: Pass self.root as the parent
+                show_image_popup('Overflow', 'stack is full! stop', candidate, parent=self.root)
             else:
                 messagebox.showwarning('Overflow', 'Stack is full! stop')
             play_sound('overflow')
@@ -369,7 +378,8 @@ class StackApp:
         if candidate:
             if sound_name:
                 play_sound(sound_name)
-            show_image_popup(title, msg, candidate)
+            # <--- MODIFIED: Pass self.root as the parent
+            show_image_popup(title, msg, candidate, parent=self.root)
         else:
             self.set_status(f"Keyword '{key}' found but image missing.")
             print(f"Keyword '{key}' image missing.")
@@ -377,7 +387,8 @@ class StackApp:
     def _show_alert(self, image_base: str, title: str, message: str, sound_name: Optional[str] = None):
         candidate = find_image(image_base, [self.script_dir, os.getcwd()])
         if candidate:
-            show_image_popup(title, message, candidate)
+            # <--- MODIFIED: Pass self.root as the parent
+            show_image_popup(title, message, candidate, parent=self.root)
         else:
             try:
                 messagebox.showinfo(title, message)
@@ -467,7 +478,8 @@ class StackApp:
         candidate = find_image('clear', [self.script_dir, os.getcwd()])
 
         if candidate and Image is not None:
-            confirm = show_image_popup('Clear Stack?', 'Do you want to clear all items?', candidate, confirm=True)
+            # <--- MODIFIED: Pass self.root as the parent
+            confirm = show_image_popup('Clear Stack?', 'Do you want to clear all items?', candidate, parent=self.root, confirm=True)
             if confirm:
                 self.stack.clear()
                 self.set_status('Stack cleared.')
@@ -530,5 +542,6 @@ class StackApp:
 # -----------------------------
 if __name__ == '__main__':
     root = tk.Tk()
-    app = StackApp(root)
+    # <--- MODIFIED: Use the new class name
+    app = AsciiStackApp(root) 
     root.mainloop()
