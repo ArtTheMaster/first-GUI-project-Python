@@ -228,7 +228,7 @@ class SplashScreen(tk.Toplevel):
         else:
             self.after(500, self.destroy)
 
-#---- Importing gui_blkpink and tk_with_pics (No changes) ----
+#---- Importing gui_blkpink and tk_with_pics ----
 try:
     from gui_blkpnk import LinkedListGUI
 except ImportError:
@@ -240,6 +240,16 @@ try:
 except ImportError:
     messagebox.showerror("Import Error", "Could not import AsciiStackApp from tk_with_pics.py.")
     exit()
+
+# --- *** NEW IMPORT FOR RECURSION *** ---
+try:
+    # We need both the GUI class and the splash screen function from the other file
+    from recursion1clone import RecursionGUI, create_splash_screen as create_recursion_splash
+except ImportError:
+    messagebox.showerror("Import Error", "Could not import from recursion1clone.py.")
+    exit()
+# --- *** END OF NEW IMPORT *** ---
+
 
 # --- Main Application Window (MODIFIED) ---
 class AppMenu:
@@ -371,11 +381,13 @@ class AppMenu:
                    command=self.open_stack_gui
                    ).pack(pady=10) 
 
-        ttk.Button(self.main_frame, text="RECURSION (W.I.P.)",
+        # --- *** MODIFIED BUTTON *** ---
+        ttk.Button(self.main_frame, text="RECURSION",
                    style="MainMenu.TButton",
                    width=30,  # Keep this for alignment
-                   command=self.recursion_wip
+                   command=self.open_recursion_gui # Changed from recursion_wip
                    ).pack(pady=10) 
+        # --- *** END OF MODIFICATION *** ---
 
         ttk.Button(self.main_frame, text="EXIT",
                    style="MainMenu.TButton",
@@ -405,9 +417,33 @@ class AppMenu:
     def open_stack_gui(self):  # Open Stack GUI
         self.open_app_window(AsciiStackApp, "Stack Visualizer")
 
-    def recursion_wip(self):
-        """Shows a message that the recursion visualizer is a work in progress."""
-        messagebox.showinfo("Work in Progress", "Recursion Visualizer is under development. Please check back later!")
+    # --- *** NEW METHOD TO LAUNCH RECURSION APP WITH SPLASH *** ---
+    def open_recursion_gui(self):
+        """Opens the Recursion app with its custom splash screen."""
+        self.root.withdraw()
+        app_window = tk.Toplevel(self.root)
+        app_window.withdraw() # Hide the app window initially
+        
+        # Create the splash screen *for* the new Toplevel window
+        # This uses the imported 'create_recursion_splash' function
+        splash = create_recursion_splash(app_window)
+        
+        def launch_app():
+            splash.destroy()
+            # Pass app_window (the Toplevel) as the 'root' for RecursionGUI
+            app_instance = RecursionGUI(app_window) 
+            # The RecursionGUI class sets its own title.
+            app_window.deiconify() # Show the app window
+        
+        # Set the close protocol to use our main app's closer
+        app_window.protocol("WM_DELETE_WINDOW",
+                            lambda: self.close_app_window(app_window))
+        
+        # Launch the app after the splash screen's duration (3000ms)
+        app_window.after(3000, launch_app)
+    # --- *** END OF NEW METHOD *** ---
+
+    # --- 'recursion_wip' method has been removed ---
 
     def show_credits_window(self):
         """Creates the 'ending credits' window for the developers."""
