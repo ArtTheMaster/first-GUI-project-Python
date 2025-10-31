@@ -87,7 +87,7 @@ class RecursionGUI:
         self.debt_image_id = None
 
         # try to load provided image into the slot (falls back silently if missing)
-        self._load_slot_image(r"recursiontest.py\yakuzamafia.jpg")
+        self._load_slot_image(r"yakuzamafia.jpg")
 
         # Right: info and controls packed into a sub-frame for neat layout
         debt_right = tk.Frame(debt_frame, bg="#ffc0cb")
@@ -249,13 +249,13 @@ class RecursionGUI:
     def play_debt_game(self):
         # Easter Egg check for "67"
         if self.debt_payment_entry.get().strip() == "67":
-            self._load_slot_image(r"recursiontest.py\scp-067-67.gif")
+            self._load_slot_image(r"scp-067-67.gif")
         else:
-            self._load_slot_image(r"recursiontest.py\yakuzamafia.jpg")
+            self._load_slot_image(r"yakuzamafia.jpg")
 
         try:
             # Using a relative path that should work if the script is run from the parent directory
-            pygame.mixer.music.load(r"recursiontest.py\Cha-Ching Sound Effect.mp3")
+            pygame.mixer.music.load(r"Cha-Ching Sound Effect.mp3")
             pygame.mixer.music.play()
         except pygame.error:
             pass # Silently ignore if the sound file is missing
@@ -306,15 +306,15 @@ class RecursionGUI:
         if abs(state['remaining_debt']) <= 5:
             color = "#00FF7F"
             popup_message = f"Final debt: ₱{state['remaining_debt']:,} and YOU WIN!\nDebt cleared within ₱5 margin."
-            self.show_result_gif(r"recursiontest.py\win.gif", popup_message, color)
+            self.show_result_gif(r"win.gif", popup_message, color)
         elif state['remaining_debt'] < -5:
             color = "#FF4500"
             popup_message = f"YOU LOSE!\nYou overpaid by ₱{abs(state['remaining_debt']):,}"
-            self.show_result_gif(r"recursiontest.py\lose.gif", popup_message, color)
+            self.show_result_gif(r"lose.gif", popup_message, color)
         else:
             color = "#FF4500"
             popup_message = f"YOU LOSE!\nYou still owe ₱{state['remaining_debt']:,}"
-            self.show_result_gif(r"recursiontest.py\lose.gif", popup_message, color)
+            self.show_result_gif(r"lose.gif", popup_message, color)
  
         self.debt_result_label.config(text=result_text, fg=color)
         self.debt_play_btn.config(state="normal")
@@ -328,7 +328,7 @@ class RecursionGUI:
     def reset_debt_game(self, init=False):
         if not init:
             try:
-                pygame.mixer.music.load("recursiontest.py\Impact Laser - Free Sound Effect-[AudioTrimmer.com].mp3")
+                pygame.mixer.music.load("Impact Laser - Free Sound Effect-[AudioTrimmer.com].mp3")
                 pygame.mixer.music.play()
             except pygame.error:
                 pass # Ignore if sound file is missing
@@ -355,7 +355,7 @@ class RecursionGUI:
         self.debt_progress_label.config(text="")
         self.debt_play_btn.config(state="normal")
         # Reset the image to the default on game reset
-        self._load_slot_image(r"recursiontest.py\yakuzamafia.jpg")
+        self._load_slot_image(r"yakuzamafia.jpg")
  
     def run_head_recursion(self):
         raw = self.students_head_var.get()
