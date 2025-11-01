@@ -289,7 +289,6 @@ class LinkedListGUI:
         self.linked_list = None      # The *instance* of the currently active linked list object
         self.list_type = None        # A string name like "Singly Linked List"
         self.current_frame = None    # Holds the currently displayed frame (main menu or list menu)
-        # self.is_displayed = False    # [REMOVED] No longer needed
 
         # --- Persistent Data ---
         # This log survives menu switches
@@ -493,7 +492,6 @@ class LinkedListGUI:
         # Create a new, empty instance of the *selected* list class
         self.linked_list = list_class()
         self.list_type = list_type  # Store the name (e.g., "Singly Linked List")
-        # self.is_displayed = False   # [REMOVED]
         self.create_list_menu(list_type)  # Build the next screen
 
     def create_list_menu(self, list_type):
@@ -525,9 +523,6 @@ class LinkedListGUI:
         btn_frame = tk.Frame(self.current_frame)
         btn_frame.pack(pady=10)
 
-        # We need to store a reference to the display button to change its text
-        # self.display_btn = None # [REMOVED]
-
         # Button definitions: (Text, command_function)
         buttons = [
             ("Append", self.append_value),
@@ -536,7 +531,6 @@ class LinkedListGUI:
             ("Delete", self.delete_value),
             ("Random", self.random_nodes),
             ("Clear List", self.clear_list),
-            # ("Display", self.toggle_display), # [REMOVED]
             ("Back", self.create_main_menu)
         ]
 
@@ -544,8 +538,6 @@ class LinkedListGUI:
         for i, (txt, cmd) in enumerate(buttons):
             btn = ttk.Button(btn_frame, text=txt, command=cmd, width=14)
             btn.grid(row=i // 4, column=i % 4, padx=8, pady=5)
-            # if txt == "Display": # [REMOVED]
-            #     self.display_btn = btn  # Save the reference
 
         # --- Canvas (for visualization) ---
         self.canvas = tk.Canvas(self.current_frame, width=900, height=360, highlightthickness=0, bg="#ffffff")
@@ -580,7 +572,6 @@ class LinkedListGUI:
         # Restore the persistent log history to the new log_box
         self._restore_logs_to_widget_if_present()
 
-        # [REMOVED] The 'if self.is_displayed' block is no longer needed
 
     # ---------------------------
     # Log handling (persistent)
@@ -649,64 +640,88 @@ class LinkedListGUI:
             except Exception:
                 pass
         
-        # [REMOVED] 'is_displayed' and 'display_btn' logic
-        
         # 'keep_logs' is True when called from a key-release
         if not keep_logs:
             pass # Logs are only cleared by the 'Clear Log' button
 
     def append_value(self):
         """Command for the 'Append' button."""
-        val = self.value_entry.get().strip()
-        if not val:
+        val_str = self.value_entry.get().strip()
+        if not val_str:
             return messagebox.showwarning("Warning", "Enter a value!")
+        
+        try:
+            val = int(val_str)  # Convert value to an integer
+        except ValueError:
+            return messagebox.showwarning("Invalid Input", "Value must be an integer.")
+
         self.linked_list.append(val)  # Call the list object's method
         self.display_list()  # [CHANGED] Refresh the display
-        self.append_log(f"Appended value '{val}' to {self.list_type}.")
+        self.append_log(f"Appended value {val} to {self.list_type}.")
 
     def prepend_value(self):
         """Command for the 'Prepend' button."""
-        val = self.value_entry.get().strip()
-        if not val:
+        val_str = self.value_entry.get().strip()
+        if not val_str:
             return messagebox.showwarning("Warning", "Enter a value!")
+
+        try:
+            val = int(val_str)  # Convert value to an integer
+        except ValueError:
+            return messagebox.showwarning("Invalid Input", "Value must be an integer.")
+
         self.linked_list.prepend(val)
         self.display_list()  # [CHANGED] Refresh the display
-        self.append_log(f"Prepended value '{val}' to {self.list_type}.")
+        self.append_log(f"Prepended value {val} to {self.list_type}.")
 
     def insert_value(self):
         """Command for the 'Insert' button."""
-        val = self.value_entry.get().strip()
+        val_str = self.value_entry.get().strip()
         pos_text = self.pos_entry.get().strip()
-        if not val:
+        
+        if not val_str:
             return messagebox.showwarning("Warning", "Enter a value!")
+
+        try:
+            val = int(val_str)  # Convert value to an integer
+        except ValueError:
+            return messagebox.showwarning("Invalid Input", "Value must be an integer.")
+
         try:
             # Default to position 1 if 'pos' is empty
             pos = int(pos_text) if pos_text else 1
             if pos < 1:
                 pos = 1  # Treat negative numbers as 1
         except ValueError:
-            pos = 1  # Treat invalid text as 1
+            # Show warning if position is invalid text
+            messagebox.showwarning("Invalid Input", "Position must be an integer. Defaulting to 1.")
+            pos = 1  
         
         self.linked_list.insert_at_position(pos, val)
         self.display_list()  # [CHANGED] Refresh the display
-        self.append_log(f"Inserted value '{val}' at position {pos} in {self.list_type}.")
+        self.append_log(f"Inserted value {val} at position {pos} in {self.list_type}.")
 
     def delete_value(self):
         """Command for the 'Delete' button."""
-        val = self.value_entry.get().strip()
-        if not val:
+        val_str = self.value_entry.get().strip()
+        if not val_str:
             return messagebox.showwarning("Warning", "Enter a value to delete!")
         
+        try:
+            val = int(val_str)  # Convert value to an integer
+        except ValueError:
+            return messagebox.showwarning("Invalid Input", "Value to delete must be an integer.")
+
         # The delete method returns a message if it fails (e.g., "not found")
         msg = self.linked_list.delete_by_value(val)
         
         if msg:
             # If there was an error, show it
             messagebox.showinfo("Info", msg)
-            self.append_log(f"Attempted to delete '{val}' from {self.list_type}: {msg}")
+            self.append_log(f"Attempted to delete {val} from {self.list_type}: {msg}")
         else:
             # If 'msg' is None, it was successful
-            self.append_log(f"Deleted value '{val}' from {self.list_type}.")
+            self.append_log(f"Deleted value {val} from {self.list_type}.")
         self.display_list()  # [CHANGED] Refresh the display
 
     def random_nodes(self):
@@ -719,12 +734,11 @@ class LinkedListGUI:
             return  # User clicked 'Cancel'
         
         for _ in range(count):
-            val = str(random.randint(0, 999))  # Create random number 0-999
+            val = random.randint(0, 999)  # Create random integer
             self.linked_list.append(val)
             
         self.display_list()  # [CHANGED] Refresh the display
         self.append_log(f"Added {count} random node(s) to {self.list_type}.") # [CHANGED] Updated log
-        # [REMOVED] 'messagebox.showinfo' as it's no longer needed
 
     def clear_list(self):
         """Command for the 'Clear List' button."""
@@ -752,8 +766,6 @@ class LinkedListGUI:
     # Display toggle and drawing
     # ---------------------------
     
-    # [REMOVED] The 'toggle_display' method is no longer needed.
-
     def display_list(self):
         """Fetches list data and calls the drawing function."""
         # Get the list of node values (e.g., ['10', '20', '30'])

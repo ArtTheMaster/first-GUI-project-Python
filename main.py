@@ -3,6 +3,17 @@ from tkinter import ttk, messagebox
 from itertools import count
 import os
 
+# --- NEW: Import Pygame for music ---
+try:
+    import pygame
+    HAS_PYGAME = True
+except ImportError:
+    HAS_PYGAME = False
+    print("Warning: 'pygame' library not found. Music will not be played.")
+    print("Please install it by running: pip install pygame")
+# --- END OF NEW IMPORT ---
+
+
 # Optional Pillow support
 try:
     from PIL import Image, ImageTk
@@ -278,6 +289,23 @@ class AppMenu:
         if not os.path.exists(self.splash_image_path):
             print(f"Warning: 'splash_image.png' not found at {self.splash_image_path}.")
             self.splash_image_path = None # Set to None if not found
+            
+        # --- *** NEW: Initialize Pygame Mixer and set Music Path *** ---
+        self.music_file = "Kill this love but lofi BLACKPINK lofi mix  chillhop beats to study_relax to.mp3"
+        self.music_path = None
+        global HAS_PYGAME # Use the global flag
+        
+        if HAS_PYGAME:
+            try:
+                pygame.mixer.init()
+                self.music_path = os.path.join(script_dir, self.music_file)
+                if not os.path.exists(self.music_path):
+                    print(f"Warning: Music file not found: {self.music_path}")
+                    self.music_path = None
+            except Exception as e:
+                print(f"Error initializing pygame.mixer: {e}")
+                HAS_PYGAME = False # Disable music if init fails
+        # --- *** END OF NEW MUSIC INIT *** ---
         
         self.style = ttk.Style()
         self.style.theme_use('default')
@@ -445,6 +473,56 @@ class AppMenu:
 
     # --- 'recursion_wip' method has been removed ---
 
+    # --- *** NEW METHOD TO QUIT APP AND STOP MUSIC *** ---
+    def quit_app(self):
+        """Stops the music and exits the application."""
+        global HAS_PYGAME
+        if HAS_PYGAME:
+            try:
+                pygame.mixer.music.stop()
+                pygame.mixer.music.unload() # Unload the file
+                pygame.mixer.quit()
+            except Exception as e:
+                print(f"Error stopping pygame: {e}")
+        self.root.quit()
+    # --- *** END OF NEW METHOD *** ---
+
+    # --- *** NEW METHOD FOR IMAGE FADE-IN ANIMATION *** ---
+    def fade_in_image(self, window, alpha):
+        """Recursively fades in the credits image using PIL.Image.blend."""
+        try:
+            if alpha > 1.0:
+                # Animation done, set final image
+                self._final_credits_img = ImageTk.PhotoImage(self._credits_pil_img)
+                self.credits_image_label.config(image=self._final_credits_img)
+                self.credits_image_label.image = self._final_credits_img
+                return
+
+            # Blend the image
+            blended_img = Image.blend(self._credits_bg_img, self._credits_pil_img, alpha)
+            
+            # Convert to PhotoImage
+            self._tk_frame = ImageTk.PhotoImage(blended_img)
+            
+            # Update the label
+            self.credits_image_label.config(image=self._tk_frame)
+            self.credits_image_label.image = self._tk_frame # Keep reference
+            
+            # Schedule next step (0.04 * 25 steps = 1.0)
+            new_alpha = alpha + 0.04 
+            # Use the credits window for the 'after' call
+            window.after(40, lambda: self.fade_in_image(window, new_alpha))
+        
+        except Exception as e:
+            # If animation fails (e.g., window closed), just show final image
+            try:
+                self._final_credits_img = ImageTk.PhotoImage(self._credits_pil_img)
+                self.credits_image_label.config(image=self._final_credits_img)
+                self.credits_image_label.image = self._final_credits_img
+            except Exception:
+                pass # Failsafe
+    # --- *** END OF NEW METHOD *** ---
+
     def show_credits_window(self):
         """Creates the 'ending credits' window for the developers."""
         self.root.withdraw()  # Hide the main menu
@@ -463,31 +541,75 @@ class AppMenu:
         y = (screen_height // 2) - (win_height // 2)
         credits_window.geometry(f"{win_width}x{win_height}+{x}+{y}")
 
-        # Ensure closing the window exits the app
-        credits_window.protocol("WM_DELETE_WINDOW", self.root.quit)
+        # --- MODIFICATION: Use self.quit_app to stop music ---
+        credits_window.protocol("WM_DELETE_WINDOW", self.quit_app)
+
+        # --- *** NEW: Play Music *** ---
+        global HAS_PYGAME
+        if HAS_PYGAME and self.music_path:
+            try:
+                pygame.mixer.music.load(self.music_path)
+                pygame.mixer.music.play(loops=-1) # -1 loops indefinitely
+            except Exception as e:
+                print(f"Error playing music: {e}")
+        # --- *** END OF MUSIC MODIFICATION *** ---
 
         # --- Image Placeholder ---
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        dev_image_path = os.path.join(script_dir, "developers.png")
+        
+        # --- Use the group67.jpg image ---
+        dev_image_path = os.path.join(script_dir, "group67.png") 
 
-        if os.path.exists(dev_image_path):
-            # If developers.png exists, display it
-            dev_image = AnimatedGIF(credits_window, dev_image_path, bg=self.BG_COLOR, target_size=(400, 400))
+        # --- *** MODIFIED: IMAGE FADE-IN LOGIC *** ---
+        target_size = (400, 400)
+        
+        global HAS_PIL
+        if os.path.exists(dev_image_path) and HAS_PIL:
+            try:
+                # Load PIL images for blending
+                self._credits_pil_img = Image.open(dev_image_path).resize(target_size, Image.LANCZOS).convert('RGB')
+                self._credits_bg_img = Image.new('RGB', target_size, self.BG_COLOR)
+                
+                # Create label
+                self.credits_image_label = tk.Label(credits_window, bg=self.BG_COLOR)
+                
+                # Create a blank first frame so it holds the space
+                self._tk_frame = ImageTk.PhotoImage(self._credits_bg_img)
+                self.credits_image_label.config(image=self._tk_frame)
+                self.credits_image_label.image = self._tk_frame
+                
+                self.credits_image_label.pack(pady=(20, 10))
+                
+                # Start animation
+                self.fade_in_image(credits_window, 0.0)
+                
+            except Exception as e:
+                print(f"Error starting fade-in animation: {e}. Falling back.")
+                # Fallback to just showing it statically
+                dev_image = AnimatedGIF(credits_window, dev_image_path, bg=self.BG_COLOR, target_size=target_size)
+                dev_image.pack(pady=(20, 10))
+        
+        elif os.path.exists(dev_image_path):
+             # HAS_PIL is False, just show it normally without fade
+            dev_image = AnimatedGIF(credits_window, dev_image_path, bg=self.BG_COLOR, target_size=target_size)
             dev_image.pack(pady=(20, 10))
+            
         else:
-            # Otherwise, show a placeholder text
+            # Image doesn't exist, show placeholder
             placeholder = tk.Label(credits_window, text="", font=("Segoe UI", 14, "italic"),
                                    bg=self.BTN_BG, fg=self.BTN_FG, width=30, height=15, relief="solid", borderwidth=2)
             placeholder.pack(pady=(20, 10))
+        # --- *** END OF IMAGE MODIFICATION *** ---
+
 
         # --- Developer Names ---
-        names_text = "Art Lorence Veridiano\nRalph Gabriel Lazaro\nLuigie Lato\nTimothy John Ramos"
+        names_text = "Art Lorence Veridiano - UI MAIN MENU & LINKED LISTS\nRalph Gabriel Lazaro - UI OF STACKS & RECURSION\nLuigie Lato - RECURSION PROGRAM & CREDITS\nTimothy John Ramos - STACKS PROGRAM"
         tk.Label(credits_window, text=names_text, font=("Segoe UI", 14, "bold"),
                  bg=self.BG_COLOR, fg=self.BTN_FG).pack(pady=10)
 
-        # --- Exit Button (MODIFIED to use "Exit.TButton" style) ---
+        # --- Exit Button (MODIFIED to use self.quit_app) ---
         ttk.Button(credits_window, text="End", style="Exit.TButton",
-                   command=self.root.quit).pack(pady=(15, 20))
+                   command=self.quit_app).pack(pady=(15, 20))
 
 
     # --- MODIFIED: start_with_splash (No changes from previous) ---

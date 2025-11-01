@@ -130,12 +130,6 @@ class RecursionGUI:
                                   bg="#ffc0cb", fg="black", font=("Helvetica", 10, "bold"), padx=10, pady=6)
         attend_head_frame.pack(fill="x", padx=20, pady=8)
  
-        # Prototype Button
-        prototype_frame = tk.Frame(attend_head_frame, bg="#ffc0cb")
-        prototype_frame.pack(fill="x", pady=4)
-        tk.Label(prototype_frame, text="Students (comma-separated, in order):", bg="#ffc0cb", fg="black").pack(side="left", anchor="w")
-        ttk.Button(prototype_frame, text="Prototype (WIP)", state="disabled").pack(side="right")
- 
         self.students_head_var = tk.StringVar(value="")  # Empty default value
         self.students_head_entry = ttk.Entry(attend_head_frame, textvariable=self.students_head_var, width=80)
         # Placeholder text and logic removed as requested
@@ -306,26 +300,40 @@ class RecursionGUI:
         if abs(state['remaining_debt']) <= 5:
             color = "#00FF7F"
             popup_message = f"Final debt: ₱{state['remaining_debt']:,} and YOU WIN!\nDebt cleared within ₱5 margin."
-            self.show_result_gif(r"win.gif", popup_message, color)
+            self.show_result_gif(r"win.gif", popup_message, color, 7000) # 7 seconds
         elif state['remaining_debt'] < -5:
             color = "#FF4500"
             popup_message = f"YOU LOSE!\nYou overpaid by ₱{abs(state['remaining_debt']):,}"
-            self.show_result_gif(r"lose.gif", popup_message, color)
+            self.show_result_gif(r"lose.gif", popup_message, color, 11000) # 11 seconds
         else:
             color = "#FF4500"
             popup_message = f"YOU LOSE!\nYou still owe ₱{state['remaining_debt']:,}"
-            self.show_result_gif(r"lose.gif", popup_message, color)
+            self.show_result_gif(r"lose.gif", popup_message, color, 11000) # 11 seconds
  
         self.debt_result_label.config(text=result_text, fg=color)
         self.debt_play_btn.config(state="normal")
-        if abs(state['remaining_debt']) > 5:  # if not a win
+        
+        # Play sound based on win/loss
+        if abs(state['remaining_debt']) <= 5: # WIN condition
             try:
-                pygame.mixer.music.load("fail.wav")
+                pygame.mixer.music.load(r"Persona 4 - Specialist.mp3")
+                pygame.mixer.music.play()
+            except pygame.error:
+                pass  # Silently ignore if the sound file is missing
+        else: # LOSS condition
+            try:
+                pygame.mixer.music.load(r"Yakuza OST - Baka Mitai - Kiryu full versionJapanese Romaji English lyrics.mp3")
                 pygame.mixer.music.play()
             except pygame.error:
                 pass  # Silently ignore if the sound file is missing
  
     def reset_debt_game(self, init=False):
+        # Stop any win/loss music
+        try:
+            pygame.mixer.music.stop()
+        except pygame.error:
+            pass # Ignore if mixer isn't running
+            
         if not init:
             try:
                 pygame.mixer.music.load("Impact Laser - Free Sound Effect-[AudioTrimmer.com].mp3")
@@ -452,8 +460,8 @@ class RecursionGUI:
         next_index = (frame_index + 1) % len(self.gif_frames)
         self.gif_animation_after_id = self.root.after(100, self._animate_gif, next_index) # 100ms delay between frames
 
-    def show_result_gif(self, gif_path, message, text_color):
-        """Displays a result GIF with text in the middle of the window for 3 seconds."""
+    def show_result_gif(self, gif_path, message, text_color, duration_ms):
+        """Displays a result GIF with text in the middle of the window for a given duration."""
         self.hide_result_gif() # Hide any previous one
 
         try:
@@ -489,7 +497,7 @@ class RecursionGUI:
         text_label.pack(pady=(5, 10))
 
         self._animate_result_gif(gif_label, 0)
-        self.root.after(3000, self.hide_result_gif) # Hide after 3 seconds
+        self.root.after(duration_ms, self.hide_result_gif) # Use the new duration
 
     def _animate_result_gif(self, label, frame_index):
         """Cycles through GIF frames on the result label."""
