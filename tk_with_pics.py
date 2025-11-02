@@ -4,28 +4,22 @@ import tkinter as tk
 from tkinter import font, messagebox
 from typing import List, Optional, Tuple
 
-# Image support
 try:
     from PIL import Image, ImageTk, ImageSequence
 except Exception:
     Image = ImageTk = ImageSequence = None
 
-# Sound support: try pygame first
 try:
     import pygame
     pygame.mixer.init()
 except Exception:
     pygame = None
 
-# optional fallback for Windows
 try:
     import winsound
 except Exception:
     winsound = None
 
-# -----------------------------
-# Configuration
-# -----------------------------
 DEFAULT_EXTS = ('.gif', '.jpg', '.png', '.jpeg', '.bmp')
 MAX_STACK = 10
 POPUP_MAX_SIZE = (360, 360)
@@ -34,11 +28,10 @@ BOX_BG = 'pink'
 BOX_BORDER = 'black'
 BUTTON_BG = 'black'
 BUTTON_FG = 'white'
-BOX_HEIGHT = 38  # compact box height
+BOX_HEIGHT = 38
 BOX_SIDE_PAD = 6
 MAX_CHARS = 36
 
-# Sound file names (without path)
 SOUND_FILES = {
     'push': 'push',
     'pop': 'pop',
@@ -52,10 +45,8 @@ SOUND_FILES = {
     'clear_popup': 'clear_popup',
 }
 
-# Keyword->(title, message, filename) mapping
-SOUND_VOLUME = 0.2 # Default volume (0.0 to 1.0)
+SOUND_VOLUME = 0.2
 
-# Keyword->(title, message, image_filename, sound_filename) mapping
 KEYWORD_DATA = {
     '67': ("'67'!", "You found 67!", '67', '67'),
     '1016': ("Leader", "You found art!", '1016', '1016'),
@@ -65,9 +56,6 @@ KEYWORD_DATA = {
     '0623': ("luiging", "jarvis, prompt print 'hellow world' on javascript", '0623', '0623'),
 }
 
-# -----------------------------
-# Utilities
-# -----------------------------
 def _script_dir() -> str:
     if getattr(sys, 'frozen', False):
         return os.path.dirname(sys.executable)
@@ -88,9 +76,7 @@ def find_image(base_name: str, search_dirs: Optional[List[str]] = None) -> Optio
 
 
 def _sound_path(name: str) -> Optional[str]:
-    # First, check the predefined sound files map
     base = SOUND_FILES.get(name)
-    # If not found, assume the name itself is the base filename (for keywords)
     if not base:
         base = name
     exts = ('.mp3', '.wav', '.ogg')
@@ -115,27 +101,13 @@ def play_sound(name: str, loops: int = 0):
             return
         except Exception:
             pass
-    # winsound only supports WAV; use it as a fallback on Windows if WAV found
     if winsound and sys.platform.startswith('win') and path.lower().endswith('.wav'):
         try:
             winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC)
         except Exception:
             pass
-    # if nothing works, silently ignore
 
-
-# -----------------------------
-# Popup with image/GIF support
-# -----------------------------
 class ImagePopup:
-    """Popup window that can show static images or animated GIFs (via PIL ImageSequence).
-
-    If `confirm=True` the popup will show Yes/No buttons and block until the user
-    chooses; the boolean result is available as the `result` attribute and is also
-    returned by the `show_image_popup` facade when used with confirm=True.
-    """
-
-    # <--- MODIFIED: Added 'parent' argument
     def __init__(self, title: str, message: str, image_path: Optional[str], parent: Optional[tk.Widget] = None, max_size: Tuple[int, int] = POPUP_MAX_SIZE,
                  confirm: bool = False):
         self.title = title
@@ -144,26 +116,23 @@ class ImagePopup:
         self.max_size = max_size
         self.confirm = confirm
         self.result = False
-        self.parent = parent # <--- MODIFIED: Store the parent
+        self.parent = parent
 
         self.root = None
         self._label_img = None
-        self._frames = [100]  # list of PhotoImage frames for animated GIF
+        self._frames = [100]
         self._frame_index = 0
         self._after_id = None
 
         self._open_popup()
 
     def _open_popup(self):
-        # <--- MODIFIED: Pass the parent to Toplevel
-        self.root = tk.Toplevel(self.parent) 
+        self.root = tk.Toplevel(self.parent)
         self.root.title(self.title)
         self.root.config(bg=WINDOW_BG)
-        # on close, ensure animation stops
         self.root.protocol("WM_DELETE_WINDOW", self._close)
 
         if self.image_path is None:
-            # No image provided: just show message + buttons
             tk.Label(self.root, text=self.message, bg=WINDOW_BG, fg='black', font=("Arial", 11, 'bold')).pack(padx=12, pady=(12, 8))
             if self.confirm:
                 btn_frame = tk.Frame(self.root, bg=WINDOW_BG)
@@ -174,8 +143,7 @@ class ImagePopup:
                 tk.Button(self.root, text='Close', command=self._close, bg=BUTTON_BG, fg=BUTTON_FG).pack(pady=(0, 12))
             if self.confirm:
                 try:
-                    # <--- MODIFIED: transient() makes it transient to its parent (set in Toplevel)
-                    self.root.transient() 
+                    self.root.transient()
                     self.root.grab_set()
                     self.root.wait_window()
                 except Exception:
@@ -183,7 +151,6 @@ class ImagePopup:
             return
 
         if Image is None:
-            # PIL not available: fallback to messagebox
             try:
                 messagebox.showinfo(self.title, f"{self.message}\n(Image support not installed)")
             except Exception:
@@ -194,7 +161,6 @@ class ImagePopup:
                 pass
             return
 
-        # Try to open image (may raise)
         try:
             img = Image.open(self.image_path)
         except Exception as e:
@@ -202,7 +168,6 @@ class ImagePopup:
             tk.Button(self.root, text='Close', command=self._close, bg=BUTTON_BG, fg=BUTTON_FG).pack(pady=(0, 12))
             return
 
-        # If GIF (or animated) -> gather frames
         is_animated = getattr(img, "is_animated", False)
         if is_animated and ImageSequence is not None:
             self._frames = []
@@ -222,12 +187,10 @@ class ImagePopup:
                 img.thumbnail(self.max_size)
             self._frames = [ImageTk.PhotoImage(img)]
 
-        # image label
         self._label_img = tk.Label(self.root, image=self._frames[0], bg=WINDOW_BG)
         self._label_img.image = self._frames[0]
         self._label_img.pack(padx=12, pady=(12, 6))
 
-        # message and button(s)
         tk.Label(self.root, text=self.message, bg=WINDOW_BG, fg='black', font=("Arial", 11, 'bold')).pack(padx=12, pady=(0, 8))
         if self.confirm:
             btn_frame = tk.Frame(self.root, bg=WINDOW_BG)
@@ -237,15 +200,12 @@ class ImagePopup:
         else:
             tk.Button(self.root, text='Close', command=self._close, bg=BUTTON_BG, fg=BUTTON_FG).pack(pady=(0, 12))
 
-        # start animation if more than one frame
         if len(self._frames) > 1:
             self._frame_index = 0
             self._animate()
 
-        # If confirm mode, make the window modal and wait for result.
         if self.confirm:
             try:
-                # <--- MODIFIED: transient() makes it transient to its parent (set in Toplevel)
                 self.root.transient()
                 self.root.grab_set()
                 self.root.wait_window()
@@ -284,17 +244,11 @@ class ImagePopup:
         self._close()
 
 
-# <--- MODIFIED: Added 'parent' argument
 def show_image_popup(title: str, message: str, image_path: Optional[str], parent: Optional[tk.Widget] = None, size: Tuple[int, int] = POPUP_MAX_SIZE, confirm: bool = False) -> Optional[bool]:
-    # <--- MODIFIED: Pass 'parent' to ImagePopup
     p = ImagePopup(title, message, image_path, parent=parent, max_size=size, confirm=confirm)
     return p.result if confirm else None
 
 
-# -----------------------------
-# Stack App (main UI)
-# -----------------------------
-# <--- MODIFIED: Renamed class to match main.py's import
 class AsciiStackApp:
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -311,7 +265,6 @@ class AsciiStackApp:
         top.pack(padx=10, pady=10, fill='x')
 
         tk.Label(top, text='Value:', bg=WINDOW_BG).pack(side='left')
-        # Ensure entry is created on the instance
         self.entry = tk.Entry(top)
         self.entry.pack(side='left', fill='x', expand=True, padx=(6, 6))
         self.entry.bind('<Return>', lambda e: self.push())
@@ -336,7 +289,6 @@ class AsciiStackApp:
         self.status = tk.Label(self.root, text='Ready', anchor='w', bg=WINDOW_BG)
         self.status.pack(fill='x', padx=10, pady=(0, 10))
 
-        # font setup (monospace)
         try:
             mono = font.nametofont('TkFixedFont')
             fam = mono.actual().get('family', 'Courier')
@@ -349,19 +301,16 @@ class AsciiStackApp:
         self.status.config(text=text)
 
     def _validate_digits(self, proposed: str) -> bool:
-        """Tk validatecommand: allow empty string or all digits only."""
         if proposed == "":
             return True
         return proposed.isdigit()
 
     def update_info(self):
         count = len(self.stack)
-        # Show overflow when the stack is full or exceeded.
         if count >= MAX_STACK:
             self.info_label.config(text='Overflow! Stack > 10', fg='red')
             candidate = find_image('overflow', [self.script_dir, os.getcwd()])
             if candidate:
-                # <--- MODIFIED: Pass self.root as the parent
                 show_image_popup('Overflow', 'stack is full! stop', candidate, parent=self.root)
             else:
                 messagebox.showwarning('Overflow', 'Stack is full! stop')
@@ -378,7 +327,6 @@ class AsciiStackApp:
         if candidate:
             if sound_name:
                 play_sound(sound_name)
-            # <--- MODIFIED: Pass self.root as the parent
             show_image_popup(title, msg, candidate, parent=self.root)
         else:
             self.set_status(f"Keyword '{key}' found but image missing.")
@@ -387,7 +335,6 @@ class AsciiStackApp:
     def _show_alert(self, image_base: str, title: str, message: str, sound_name: Optional[str] = None):
         candidate = find_image(image_base, [self.script_dir, os.getcwd()])
         if candidate:
-            # <--- MODIFIED: Pass self.root as the parent
             show_image_popup(title, message, candidate, parent=self.root)
         else:
             try:
@@ -426,11 +373,9 @@ class AsciiStackApp:
             v = v[:MAX_CHARS - 3] + '...'
 
         self.stack.append(v)
-        # use tk.END constant — robust and clear
         try:
             self.entry.delete(0, tk.END)
         except Exception:
-            # fallback: try 'end' string if for some reason tk.END unavailable
             try:
                 self.entry.delete(0, 'end')
             except Exception:
@@ -440,7 +385,6 @@ class AsciiStackApp:
         self.update_info()
         self.draw()
 
-        # sound + keyword handling
         play_sound('push')
         self._handle_keyword(v)
 
@@ -464,7 +408,6 @@ class AsciiStackApp:
         self.set_status(f'Top: {v}')
         play_sound('peek')
 
-    # ✅ Updated clear() — same theme as others
     def clear(self):
         if not self.stack:
             self.set_status('Stack already empty.')
@@ -478,7 +421,6 @@ class AsciiStackApp:
         candidate = find_image('clear', [self.script_dir, os.getcwd()])
 
         if candidate and Image is not None:
-            # <--- MODIFIED: Pass self.root as the parent
             confirm = show_image_popup('Clear Stack?', 'Do you want to clear all items?', candidate, parent=self.root, confirm=True)
             if confirm:
                 self.stack.clear()
@@ -537,11 +479,7 @@ class AsciiStackApp:
             top_lbl.place(relx=0.95, rely=0.5, anchor='e')
 
 
-# -----------------------------
-# Run
-# -----------------------------
 if __name__ == '__main__':
     root = tk.Tk()
-    # <--- MODIFIED: Use the new class name
-    app = AsciiStackApp(root) 
+    app = AsciiStackApp(root)
     root.mainloop()
