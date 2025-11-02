@@ -515,7 +515,7 @@ class AppMenu:
             placeholder.pack(pady=(20, 10))
 
 
-        names_text = "Art Lorence Veridiano - UI MAIN MENU & LINKED LISTS\nRalph Gabriel Lazaro - UI OF STACKS & RECURSION\nLuigie Lato - RECURSION PROGRAM & CREDITS\nTimothy John Ramos - STACKS PROGRAM"
+        names_text = "Art Lorence Veridiano - UI MAIN MENU & LINKED LISTS PROGRAM \nRalph Gabriel Lazaro - UI OF STACKS & RECURSION PROGRAM\nLuigie Lato - UI RECURSION PROGRAM & CREDITS\nTimothy John Ramos - STACKS PROGRAM"
         tk.Label(credits_window, text=names_text, font=("Segoe UI", 14, "bold"),
                  bg=self.BG_COLOR, fg=self.BTN_FG).pack(pady=10)
 
