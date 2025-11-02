@@ -82,7 +82,6 @@ class SinglyLinkedList:
     def clear(self):
         self.head = None
 
-
 class DoublyLinkedList(SinglyLinkedList):
     def append(self, data):
         new_node = DoublyNode(data)
@@ -118,7 +117,6 @@ class DoublyLinkedList(SinglyLinkedList):
         if cur.next:
             cur.next.prev = new_node
         cur.next = new_node
-
 
 class CircularLinkedList(SinglyLinkedList):
     def append(self, data):
@@ -198,7 +196,6 @@ class CircularLinkedList(SinglyLinkedList):
             return f"Value '{value}' not found."
         
         prev.next = cur.next
-
 
 class LinkedListGUI:
     def __init__(self, root):
@@ -399,6 +396,11 @@ class LinkedListGUI:
 
         self.canvas = tk.Canvas(self.current_frame, width=900, height=360, highlightthickness=0, bg="#ffffff")
         self.canvas.pack(pady=6)
+        
+        self.x_scrollbar = ttk.Scrollbar(self.current_frame, orient="horizontal", command=self.canvas.xview)
+        self.x_scrollbar.pack(fill="x", padx=20, pady=(0, 6)) 
+        
+        self.canvas.configure(xscrollcommand=self.x_scrollbar.set)
 
         self.output_box = tk.Text(self.current_frame, height=4, width=95, state="disabled", wrap="word",
                                   bd=1, relief="solid", font=("Helvetica", 11), bg="#ffffff", fg="#000000", insertbackground="#000000")
@@ -522,7 +524,7 @@ class LinkedListGUI:
                 pos = 1
         except ValueError:
             messagebox.showwarning("Invalid Input", "Position must be an integer. Defaulting to 1.")
-            pos = 1
+            pos = 1  
         
         self.linked_list.insert_at_position(pos, val)
         self.display_list()
@@ -569,9 +571,7 @@ class LinkedListGUI:
 
     def switch_theme(self):
         self.theme = "dark" if self.theme == "pink" else "pink"
-
         self.create_main_menu()
-
         self.append_log(f"Theme switched to {self.theme}.")
 
     
@@ -608,58 +608,74 @@ class LinkedListGUI:
                                    fill="#000000")
             except Exception:
                 pass
-            return
-
-        x_start, y = 60, 180
-        node_d = 60
-        spacing = 40
         
-        total_w = len(nodes) * node_d + (len(nodes) - 1) * spacing
-        x = max(60, (900 - total_w) // 2)
+        else:
+            x, y = 60, 180
+            node_d = 60
+            spacing = 40
+            
+            centers = []
+            
+            try:
+                for i, val in enumerate(nodes):
+                    cx = x + i * (node_d + spacing) + node_d // 2
+                    cy = y
+                    centers.append((cx, cy))
+                    
+                    outline_color = "#000000"
+                    canvas.create_oval(cx - node_d // 2, cy - node_d // 2, cx + node_d // 2, cy + node_d // 2,
+                                       fill=self.node_fill, outline=outline_color, width=2)
+                    canvas.create_text(cx, cy, text=val, fill="#000000", font=("Helvetica", 12, "bold"))
 
-        centers = []
-        
-        try:
-            for i, val in enumerate(nodes):
-                cx = x + i * (node_d + spacing) + node_d // 2
-                cy = y
-                centers.append((cx, cy))
-                
-                outline_color = "#000000"
-                canvas.create_oval(cx - node_d // 2, cy - node_d // 2, cx + node_d // 2, cy + node_d // 2,
-                                   fill=self.node_fill, outline=outline_color, width=2)
-                canvas.create_text(cx, cy, text=val, fill="#000000", font=("Helvetica", 12, "bold"))
-
-            for i in range(len(centers) - 1):
-                x1, y1 = centers[i]
-                x2, y2 = centers[i+1]
-                canvas.create_line(x1 + node_d // 2, y1, x2 - node_d // 2, y2,
-                                   arrow=tk.LAST, width=2, fill=self.arrow_color)
-
-            if self.list_type == "Doubly Linked List" and len(centers) > 1:
                 for i in range(len(centers) - 1):
                     x1, y1 = centers[i]
-                    x2, y2 = centers[i + 1]
-                    canvas.create_line(x2 - node_d // 2, y2 + 12, x1 + node_d // 2, y1 + 12,
-                                       arrow=tk.LAST, dash=(4, 3), width=2, fill=self.arrow_color)
+                    x2, y2 = centers[i+1]
+                    canvas.create_line(x1 + node_d // 2, y1, x2 - node_d // 2, y2,
+                                       arrow=tk.LAST, width=2, fill=self.arrow_color)
 
-            if self.list_type == "Circular Linked List" and len(centers) > 1:
-                x_first, y_first = centers[0]
-                x_last, y_last = centers[-1]
-                top = y - 80
-                canvas.create_line(x_last + node_d // 2, y_last,
-                                   x_last + node_d // 2 + 20, top,
-                                   x_first - node_d // 2 - 20, top,
-                                   x_first - node_d // 2, y_first,
-                                   smooth=True, width=2, arrow=tk.LAST, dash=(4, 3), fill=self.arrow_color)
-                canvas.create_text((x_first + x_last) / 2, top - 12,
-                                   text="(back to head)", fill="#000000", font=("Helvetica", 10, "italic"))
+                if self.list_type == "Doubly Linked List" and len(centers) > 1:
+                    for i in range(len(centers) - 1):
+                        x1, y1 = centers[i]
+                        x2, y2 = centers[i + 1]
+                        canvas.create_line(x2 - node_d // 2, y2 + 12, x1 + node_d // 2, y1 + 12,
+                                           arrow=tk.LAST, dash=(4, 3), width=2, fill=self.arrow_color)
 
-            if centers:
-                hx, hy = centers[0]
-                canvas.create_text(hx, hy - node_d // 2 - 10, text="HEAD", fill="#000000", font=("Helvetica", 9, "bold"))
-                tx, ty = centers[-1]
-                canvas.create_text(tx, ty + node_d // 2 + 12, text="TAIL", fill="#000000", font=("Helvetica", 9, "bold"))
+                if self.list_type == "Circular Linked List" and len(centers) > 1:
+                    x_first, y_first = centers[0]
+                    x_last, y_last = centers[-1]
+                    top = y - 80
+                    canvas.create_line(x_last + node_d // 2, y_last,
+                                       x_last + node_d // 2 + 20, top,
+                                       x_first - node_d // 2 - 20, top,
+                                       x_first - node_d // 2, y_first,
+                                       smooth=True, width=2, arrow=tk.LAST, dash=(4, 3), fill=self.arrow_color)
+                    canvas.create_text((x_first + x_last) / 2, top - 12,
+                                       text="(back to head)", fill="#000000", font=("Helvetica", 10, "italic"))
+
+                if centers:
+                    hx, hy = centers[0]
+                    canvas.create_text(hx, hy - node_d // 2 - 10, text="HEAD", fill="#000000", font=("Helvetica", 9, "bold"))
+                    tx, ty = centers[-1]
+                    canvas.create_text(tx, ty + node_d // 2 + 12, text="TAIL", fill="#000000", font=("Helvetica", 9, "bold"))
+            except Exception:
+                pass
+
+        try:
+            bbox = canvas.bbox("all")
+            if bbox:
+                c_height = canvas.winfo_height()
+                if c_height < 50: c_height = 360 
+                
+                scroll_x1 = max(0, bbox[0] - 20)
+                scroll_x2 = bbox[2] + 20
+                
+                canvas.configure(scrollregion=(scroll_x1, 0, scroll_x2, c_height))
+            else:
+                c_width = canvas.winfo_width()
+                c_height = canvas.winfo_height()
+                if c_width < 50: c_width = 900
+                if c_height < 50: c_height = 360
+                canvas.configure(scrollregion=(0, 0, c_width, c_height))
         except Exception:
             pass
 
